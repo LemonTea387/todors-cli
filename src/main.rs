@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use inquire::{error::InquireResult, DateSelect, Select, Text};
+use inquire::{error::InquireResult, DateSelect, MultiSelect, Select, Text};
 use std::fmt::Display;
 
 static PROMPT: &str = "TODO-RS>";
@@ -12,6 +12,7 @@ fn main() -> InquireResult<()> {
             "Add Task" => add_task(&mut tm).ok(),
             "List Tasks" => list_tasks(&tm).ok(),
             "List Tasks At" => list_tasks_at_date(&tm).ok(),
+            "Complete Tasks At" => mark_tasks_at_date(&tm).ok(),
             _ => break,
         };
     }
@@ -45,14 +46,30 @@ fn list_tasks_at_date(tm: &TaskManager) -> InquireResult<()> {
     Ok(())
 }
 
+fn mark_tasks_at_date(tm: &TaskManager) -> InquireResult<()> {
+    let date = DateSelect::new("Date:").prompt()?;
+    MultiSelect::new(
+        "Mark Tasks as Completed",
+        tm.get_tasks_at_date(&date).collect(),
+    )
+    .prompt()?;
+
+    Ok(())
+}
+
 struct Task {
     title: String,
     date: NaiveDate,
+    completed: bool,
 }
 
 impl Task {
     fn new(title: String, date: NaiveDate) -> Self {
-        Task { title, date }
+        Task {
+            title,
+            date,
+            completed: false,
+        }
     }
 }
 
@@ -76,11 +93,18 @@ impl TaskManager {
     fn get_tasks(&self) -> &[Task] {
         self.tasks.as_slice()
     }
-    fn get_tasks_at_date<'a>(&'a self, date:&'a NaiveDate) -> impl Iterator<Item=&'a Task> + 'a{
+    fn get_tasks_at_date<'a>(&'a self, date: &'a NaiveDate) -> impl Iterator<Item = &'a Task> {
         self.tasks.iter().filter(move |&task| task.date == *date)
     }
+    fn complete_tasks(&mut self, task: &[&Task]) {}
 }
 
 fn get_categories() -> Vec<&'static str> {
-    vec!["Add Task", "List Tasks", "List Tasks At", "Quit"]
+    vec![
+        "Add Task",
+        "List Tasks",
+        "List Tasks At",
+        "Complete Tasks At",
+        "Quit",
+    ]
 }
