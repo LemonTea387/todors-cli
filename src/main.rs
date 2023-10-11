@@ -5,23 +5,33 @@ use std::fmt::Display;
 static PROMPT: &str = "TODO-RS>";
 
 fn main() -> InquireResult<()> {
+    let mut tm = TaskManager::new();
     loop {
         let command = Select::new(PROMPT, get_categories()).prompt().unwrap_or("");
         match command {
-            "Add Task" => add_task()?,
+            "Add Task" => add_task(&mut tm).ok(),
+            "List Tasks" => list_tasks(&tm).ok(),
             _ => break,
-        }
+        };
     }
     Ok(())
 }
 
-fn add_task() -> InquireResult<()> {
+fn add_task(tm: &mut TaskManager) -> InquireResult<()> {
     let date = DateSelect::new("Date:").prompt()?;
     let title = Text::new("Task: ").prompt().unwrap_or("".to_owned());
 
     let task = Task::new(title, date);
-    println!("Created Task {}", task);
 
+    tm.new_task(task);
+
+    Ok(())
+}
+
+fn list_tasks(tm: &TaskManager) -> InquireResult<()> {
+    for task in tm.get_tasks() {
+        println!("{}", task);
+    }
     Ok(())
 }
 
@@ -42,6 +52,22 @@ impl Display for Task {
     }
 }
 
+struct TaskManager {
+    tasks: Vec<Task>,
+}
+
+impl TaskManager {
+    fn new() -> Self {
+        TaskManager { tasks: vec![] }
+    }
+    fn new_task(&mut self, task: Task) {
+        self.tasks.push(task);
+    }
+    fn get_tasks(&self) -> &[Task] {
+        self.tasks.as_slice()
+    }
+}
+
 fn get_categories() -> Vec<&'static str> {
-    vec!["Add Task", "Quit"]
+    vec!["Add Task", "List Tasks", "Quit"]
 }
