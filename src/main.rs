@@ -12,7 +12,7 @@ fn main() -> InquireResult<()> {
             "Add Task" => add_task(&mut tm).ok(),
             "List Tasks" => list_tasks(&tm).ok(),
             "List Tasks At" => list_tasks_at_date(&tm).ok(),
-            "Complete Tasks At" => mark_tasks_at_date(&tm).ok(),
+            "Complete Tasks At" => mark_tasks_at_date(&mut tm).ok(),
             _ => break,
         };
     }
@@ -23,16 +23,14 @@ fn add_task(tm: &mut TaskManager) -> InquireResult<()> {
     let date = DateSelect::new("Date:").prompt()?;
     let title = Text::new("Task: ").prompt().unwrap_or("".to_owned());
 
-    let task = Task::new(title, date);
-
-    tm.new_task(task);
+    tm.new_task(title, date);
 
     Ok(())
 }
 
 fn list_tasks(tm: &TaskManager) -> InquireResult<()> {
     for task in tm.get_tasks() {
-        println!("{}", task);
+        println!("[{}] {}", if task.completed { "x" } else { " " }, task);
     }
     Ok(())
 }
@@ -40,32 +38,38 @@ fn list_tasks(tm: &TaskManager) -> InquireResult<()> {
 fn list_tasks_at_date(tm: &TaskManager) -> InquireResult<()> {
     let date = DateSelect::new("Date:").prompt()?;
     for task in tm.get_tasks_at_date(&date) {
-        println!("{}", task);
+        println!("[{}] {}", if task.completed { "x" } else { " " }, task);
     }
 
     Ok(())
 }
 
-fn mark_tasks_at_date(tm: &TaskManager) -> InquireResult<()> {
+fn mark_tasks_at_date(tm: &mut TaskManager) -> InquireResult<()> {
     let date = DateSelect::new("Date:").prompt()?;
-    MultiSelect::new(
-        "Mark Tasks as Completed",
-        tm.get_tasks_at_date(&date).collect(),
-    )
-    .prompt()?;
+    let tasks;
+    {
+        tasks = tm.get_tasks_at_date(&date).collect();
+    }
+    let mark_task = MultiSelect::new("Mark Tasks as Completed", tasks).prompt()?;
+    let complete_ids: Vec<u32> = mark_task.iter().map(|&task| task.id).collect();
+
+    tm.complete_tasks(&complete_ids);
 
     Ok(())
 }
 
+#[derive(PartialEq, Eq)]
 struct Task {
+    id: u32,
     title: String,
     date: NaiveDate,
     completed: bool,
 }
 
 impl Task {
-    fn new(title: String, date: NaiveDate) -> Self {
+    fn new(id: u32, title: String, date: NaiveDate) -> Self {
         Task {
+            id,
             title,
             date,
             completed: false,
@@ -87,7 +91,15 @@ impl TaskManager {
     fn new() -> Self {
         TaskManager { tasks: vec![] }
     }
-    fn new_task(&mut self, task: Task) {
+
+    fn new_id(&self) -> u32 {
+        if !self.tasks.is_empty() {
+            return self.tasks.last().unwrap().id + 1;
+        }
+        0
+    }
+    fn new_task(&mut self, title: String, date: NaiveDate) {
+        let task = Task::new(self.new_id(), title, date);
         self.tasks.push(task);
     }
     fn get_tasks(&self) -> &[Task] {
@@ -96,7 +108,16 @@ impl TaskManager {
     fn get_tasks_at_date<'a>(&'a self, date: &'a NaiveDate) -> impl Iterator<Item = &'a Task> {
         self.tasks.iter().filter(move |&task| task.date == *date)
     }
-    fn complete_tasks(&mut self, task: &[&Task]) {}
+    fn complete_tasks(&mut self, task_ids: &[u32]) {
+        // Extremely naive solution
+        for &id in task_ids {
+            for elem in &mut self.tasks {
+                if elem.id == id {
+                    elem.completed = true;
+                }
+            }
+        }
+    }
 }
 
 fn get_categories() -> Vec<&'static str> {
