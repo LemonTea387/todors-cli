@@ -59,16 +59,14 @@ fn mark_tasks_at_date(tm: &mut TaskManager) -> InquireResult<()> {
 
 #[derive(PartialEq, Eq)]
 struct Task {
-    id: u32,
     title: String,
     date: NaiveDate,
     completed: bool,
 }
 
 impl Task {
-    fn new(id: u32, title: String, date: NaiveDate) -> Self {
+    fn new(title: String, date: NaiveDate) -> Self {
         Task {
-            id,
             title,
             date,
             completed: false,
@@ -90,15 +88,8 @@ impl TaskManager {
     fn new() -> Self {
         TaskManager { tasks: vec![] }
     }
-
-    fn new_id(&self) -> u32 {
-        if !self.tasks.is_empty() {
-            return self.tasks.last().unwrap().id + 1;
-        }
-        0
-    }
     fn new_task(&mut self, title: String, date: NaiveDate) {
-        let task = Task::new(self.new_id(), title, date);
+        let task = Task::new(title, date);
         self.tasks.push(task);
     }
     fn get_tasks(&self) -> &[Task] {
