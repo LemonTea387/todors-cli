@@ -12,7 +12,7 @@ fn main() -> InquireResult<()> {
             "Add Task" => add_task(&mut tm).ok(),
             "List Tasks" => list_tasks(&tm).ok(),
             "List Tasks At" => list_tasks_at_date(&tm).ok(),
-            "Complete Tasks At" => mark_tasks_at_date(&tm).ok(),
+            "Complete Tasks At" => mark_tasks_at_date(&mut tm).ok(),
             _ => break,
         };
     }
@@ -32,7 +32,7 @@ fn add_task(tm: &mut TaskManager) -> InquireResult<()> {
 
 fn list_tasks(tm: &TaskManager) -> InquireResult<()> {
     for task in tm.get_tasks() {
-        println!("{}", task);
+        println!("[{}] {}", if task.completed { "x" } else { " " }, task);
     }
     Ok(())
 }
@@ -40,19 +40,21 @@ fn list_tasks(tm: &TaskManager) -> InquireResult<()> {
 fn list_tasks_at_date(tm: &TaskManager) -> InquireResult<()> {
     let date = DateSelect::new("Date:").prompt()?;
     for task in tm.get_tasks_at_date(&date) {
-        println!("{}", task);
+        println!("[{}] {}", if task.completed { "x" } else { " " }, task);
     }
 
     Ok(())
 }
 
-fn mark_tasks_at_date(tm: &TaskManager) -> InquireResult<()> {
+fn mark_tasks_at_date(tm: &mut TaskManager) -> InquireResult<()> {
     let date = DateSelect::new("Date:").prompt()?;
-    MultiSelect::new(
+    let tasks_to_complete = MultiSelect::new(
         "Mark Tasks as Completed",
-        tm.get_tasks_at_date(&date).collect(),
+        tm.get_tasks_at_date_mut(&date).collect(),
     )
     .prompt()?;
+
+    TaskManager::complete_tasks(tasks_to_complete);
 
     Ok(())
 }
@@ -94,9 +96,19 @@ impl TaskManager {
         self.tasks.as_slice()
     }
     fn get_tasks_at_date<'a>(&'a self, date: &'a NaiveDate) -> impl Iterator<Item = &'a Task> {
-        self.tasks.iter().filter(move |&task| task.date == *date)
+        self.tasks.iter().filter(move |task| task.date == *date)
     }
-    fn complete_tasks(&mut self, task: &[&Task]) {}
+    fn get_tasks_at_date_mut<'a>(
+        &'a mut self,
+        date: &'a NaiveDate,
+    ) -> impl Iterator<Item = &'a mut Task> {
+        self.tasks.iter_mut().filter(move |task| task.date == *date)
+    }
+    fn complete_tasks(tasks_to_complete: Vec<&mut Task>) {
+        for task in tasks_to_complete {
+            task.completed = true;
+        }
+    }
 }
 
 fn get_categories() -> Vec<&'static str> {
