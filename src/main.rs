@@ -13,6 +13,7 @@ fn main() -> InquireResult<()> {
             "List Tasks" => list_tasks(&tm).ok(),
             "List Tasks At" => list_tasks_at_date(&tm).ok(),
             "Complete Tasks At" => mark_tasks_at_date(&mut tm).ok(),
+            "Delete Tasks At" => delete_tasks_at_date(&mut tm).ok(),
             _ => break,
         };
     }
@@ -57,12 +58,23 @@ fn mark_tasks_at_date(tm: &mut TaskManager) -> InquireResult<()> {
     Ok(())
 }
 
+fn delete_tasks_at_date(tm: &mut TaskManager) -> InquireResult<()> {
+    let date = DateSelect::new("Date:").prompt()?;
+    let tasks_to_delete =
+        MultiSelect::new("Mark Tasks to Delete", tm.get_tasks_at_date(date).collect()).prompt()?;
+    let task_id_to_delete: Vec<u32> = tasks_to_delete.iter().map(|task| task.id).collect();
+    tm.delete_tasks(&task_id_to_delete);
+
+    Ok(())
+}
+
 fn get_categories() -> Vec<&'static str> {
     vec![
         "Add Task",
         "List Tasks",
         "List Tasks At",
         "Complete Tasks At",
+        "Delete Tasks At",
         "Quit",
     ]
 }
