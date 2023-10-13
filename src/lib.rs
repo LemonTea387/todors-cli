@@ -63,6 +63,8 @@ impl TaskManager {
         }
     }
     pub fn delete_tasks(&mut self, tasks_id_to_delete: &[u32]) {
+        // TODO : This is pretty terrible and honestly I want to know how to make this better
+        // The naive ID system is forced into this entirely just because of this.
         for &id in tasks_id_to_delete {
             self.tasks.retain(|t| t.id != id)
         }
