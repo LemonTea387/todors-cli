@@ -1,6 +1,6 @@
-use chrono::NaiveDate;
 use inquire::{error::InquireResult, DateSelect, MultiSelect, Select, Text};
-use std::fmt::Display;
+
+use todors_cli::TaskManager;
 
 static PROMPT: &str = "TODO-RS>";
 
@@ -55,57 +55,6 @@ fn mark_tasks_at_date(tm: &mut TaskManager) -> InquireResult<()> {
     TaskManager::complete_tasks(tasks_to_complete);
 
     Ok(())
-}
-
-#[derive(PartialEq, Eq)]
-struct Task {
-    title: String,
-    date: NaiveDate,
-    completed: bool,
-}
-
-impl Task {
-    fn new(title: String, date: NaiveDate) -> Self {
-        Task {
-            title,
-            date,
-            completed: false,
-        }
-    }
-}
-
-impl Display for Task {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} - {}", self.title, self.date)
-    }
-}
-
-struct TaskManager {
-    tasks: Vec<Task>,
-}
-
-impl TaskManager {
-    fn new() -> Self {
-        TaskManager { tasks: vec![] }
-    }
-    fn new_task(&mut self, title: String, date: NaiveDate) {
-        let task = Task::new(title, date);
-        self.tasks.push(task);
-    }
-    fn get_tasks(&self) -> &[Task] {
-        self.tasks.as_slice()
-    }
-    fn get_tasks_at_date(&self, date: NaiveDate) -> impl Iterator<Item = &'_ Task> {
-        self.tasks.iter().filter(move |task| task.date == date)
-    }
-    fn get_tasks_at_date_mut(&mut self, date: NaiveDate) -> impl Iterator<Item = &'_ mut Task> {
-        self.tasks.iter_mut().filter(move |task| task.date == date)
-    }
-    fn complete_tasks(tasks_to_complete: Vec<&mut Task>) {
-        for task in tasks_to_complete {
-            task.completed = true;
-        }
-    }
 }
 
 fn get_categories() -> Vec<&'static str> {
